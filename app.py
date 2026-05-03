@@ -81,20 +81,27 @@ st.markdown(f"""
   input, textarea, select {{
     font-family:'Figtree','Inter','Segoe UI',-apple-system,sans-serif !important;
   }}
-  /* PRESERVA fontes de ícones — não deixa Figtree sobrescrever */
-  [class*="material-symbols"],
-  [class*="MaterialSymbols"],
-  [class*="material-icons"],
+  /* PRESERVA fontes de ícones — Material Symbols (NÃO incluir svg/* aqui:
+     isso quebra os textos dos gráficos Plotly) */
+  span[class*="material-symbols"],
+  span[class*="MaterialSymbols"],
+  span[class*="material-icons"],
   span.material-symbols-outlined,
   span.material-symbols-rounded,
   span.material-icons,
   span.material-icons-outlined,
   i.material-icons,
-  i[class*="material"],
-  [data-testid*="Icon"] *,
-  svg, svg * {{
+  i[class*="material"] {{
     font-family:'Material Symbols Outlined','Material Symbols Rounded',
                 'Material Icons','Material Icons Outlined' !important;
+  }}
+  /* Plotly: força Figtree em todos os textos SVG dos gráficos */
+  .js-plotly-plot text, .js-plotly-plot tspan,
+  .plot-container text, .plot-container tspan,
+  .main-svg text, .main-svg tspan {{
+    font-family:'Figtree','Inter','Segoe UI',sans-serif !important;
+    text-transform:none !important;
+    letter-spacing:normal !important;
   }}
   h1,h2,h3,h4 {{ letter-spacing:-.3px; }}
 
