@@ -272,6 +272,56 @@ GRI_INDICATORS = {
 def fmt(v: float) -> str:
     return f"R$ {v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
 
+def parse_brl(s: str) -> float:
+    """
+    Parser inteligente de valores em R$ no padrão brasileiro.
+
+    Aceita qualquer um destes formatos:
+        '5300300'                  → 5.300.300,00
+        '5300300.50'               → 5.300.300,50
+        '5.300.300,00'             → 5.300.300,00
+        '5300300,50'               → 5.300.300,50
+        '5,3 mi' / '5.3 milhoes'   → 5.300.000,00
+        '2 bi' / '2 bilhoes'       → 2.000.000.000,00
+        '500 mil'                  → 500.000,00
+        'R$ 5.300.300,00'          → 5.300.300,00
+    """
+    if s is None:
+        return 0.0
+    s = str(s).strip().lower()
+    if not s:
+        return 0.0
+
+    # Detecta sufixo de unidade
+    mult = 1.0
+    sufixos = [
+        ("bilhões", 1e9), ("bilhoes", 1e9), ("bilhão", 1e9), ("bilhao", 1e9), ("bi", 1e9),
+        ("milhões", 1e6), ("milhoes", 1e6), ("milhão", 1e6), ("milhao", 1e6), ("mi", 1e6), ("mm", 1e6),
+        ("mil", 1e3), ("k", 1e3),
+    ]
+    for suf, m in sufixos:
+        if s.endswith(suf):
+            s = s[:-len(suf)].strip()
+            mult = m
+            break
+
+    # Remove prefixos / símbolos
+    s = s.replace("r$", "").replace("$", "").replace(" ", "").strip()
+    if not s:
+        return 0.0
+
+    # Converte separadores: padrão brasileiro "1.234.567,89" → "1234567.89"
+    if "," in s and "." in s:
+        s = s.replace(".", "").replace(",", ".")
+    elif "," in s:
+        s = s.replace(",", ".")
+    # se só houver ".", mantém (ex.: "5300300.50" formato US)
+
+    try:
+        return float(s) * mult
+    except ValueError:
+        return 0.0
+
 def fmt_latex(v: float) -> str:
     r"""Formata moeda escapando o $ para uso em st.latex (R\$)."""
     return f"R\\$\\,{v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
@@ -713,45 +763,53 @@ with st.sidebar:
     st.markdown(f"<hr style='border:none;border-top:1px solid {RW['dark_red']};margin:1rem 0 .6rem 0;opacity:.5'>",unsafe_allow_html=True)
     st.markdown(f"<h3 style='color:{RW['beige']};font-size:.95rem;letter-spacing:.4px;text-transform:uppercase;margin:.2rem 0 .4rem 0'>💰 Dados Financeiros</h3>", unsafe_allow_html=True)
 
-    # Aviso de formato (sem ponto/vírgula — só números)
+    # Dica de formato — entrada livre estilo calculadora
     st.markdown(
-        f"<p style='color:{RW['beige']};font-size:.74rem;opacity:.85;margin:-.3rem 0 .3rem 0'>"
-        f"💡 <b>Como inserir valores:</b> escolha a unidade abaixo e digite apenas números "
-        f"(ex.: <code style='color:white'>5</code> em <i>milhões</i> = R$ 5.000.000,00).</p>",
+        f"<p style='color:{RW['beige']};font-size:.74rem;opacity:.85;margin:-.3rem 0 .5rem 0;line-height:1.45'>"
+        f"💡 <b>Digite o valor como preferir:</b><br>"
+        f"&nbsp;&nbsp;• <code style='color:white'>5300300</code> ou <code style='color:white'>5.300.300,00</code><br>"
+        f"&nbsp;&nbsp;• <code style='color:white'>5,3 mi</code> · <code style='color:white'>500 mil</code> · <code style='color:white'>2 bi</code></p>",
         unsafe_allow_html=True,
     )
 
-    UNIDADES = {
-        "Reais (R$)":          1,
-        "Mil (R$ mil)":        1_000,
-        "Milhão (R$ mi)":      1_000_000,
-        "Bilhão (R$ bi)":      1_000_000_000,
-    }
-    unidade_lbl = st.selectbox("Unidade dos valores financeiros", list(UNIDADES.keys()), index=1)
-    mult = UNIDADES[unidade_lbl]
-
-    receita_in = st.number_input(
-        f"Receita Bruta Anual ({unidade_lbl})",
-        min_value=0.0, value=1000.0, step=10.0, format="%.2f",
-        help="Digite o valor na unidade escolhida acima. Use vírgula apenas para decimais.",
+    # Receita Bruta — entrada livre
+    receita_str = st.text_input(
+        "Receita Bruta Anual (R$)",
+        value=st.session_state.get("receita_str", "1.000.000,00"),
+        placeholder="ex.: 5.300.300,00 ou 5,3 mi",
+        help="Aceita ponto como separador de milhar, vírgula como decimal, ou sufixos: mil, mi, bi.",
+        key="receita_str",
     )
-    cmv_in = st.number_input(
-        f"Custo da Mercadoria — CMV ({unidade_lbl})",
-        min_value=0.0, value=500.0, step=10.0, format="%.2f",
+    receita_anual = parse_brl(receita_str)
+
+    # CMV — entrada livre
+    cmv_str = st.text_input(
+        "Custo da Mercadoria — CMV (R$)",
+        value=st.session_state.get("cmv_str", "500.000,00"),
+        placeholder="ex.: 500.000,00 ou 500 mil",
         help="Custo dos produtos/serviços vendidos no período.",
+        key="cmv_str",
     )
-    receita_anual = receita_in * mult
-    cmv          = cmv_in * mult
+    cmv = parse_brl(cmv_str)
 
-    # Preview formatado
+    # Preview formatado dos valores reconhecidos
+    _r_ok = "✅" if receita_anual > 0 else "⚠️"
+    _c_ok = "✅" if cmv > 0 else "⚠️"
     st.markdown(
-        f"<div style='background:rgba(213,196,161,.12);border-radius:6px;padding:.45rem .7rem;"
-        f"font-size:.78rem;color:{RW['beige']};margin:.2rem 0 .5rem 0'>"
-        f"📈 <b>Receita:</b> {fmt(receita_anual)}<br>"
-        f"📉 <b>CMV:</b> {fmt(cmv)}"
+        f"<div style='background:rgba(213,196,161,.12);border:1px solid rgba(213,196,161,.25);"
+        f"border-radius:8px;padding:.55rem .8rem;font-size:.8rem;color:{RW['beige']};"
+        f"margin:.4rem 0 .6rem 0;line-height:1.6'>"
+        f"{_r_ok} <b>Receita reconhecida:</b><br>"
+        f"<span style='color:white;font-size:.95rem;font-weight:600'>{fmt(receita_anual)}</span><br>"
+        f"<hr style='border:none;border-top:1px dashed rgba(213,196,161,.3);margin:.4rem 0'>"
+        f"{_c_ok} <b>CMV reconhecido:</b><br>"
+        f"<span style='color:white;font-size:.95rem;font-weight:600'>{fmt(cmv)}</span>"
         f"</div>",
         unsafe_allow_html=True,
     )
+
+    if cmv > receita_anual and receita_anual > 0:
+        st.warning("⚠️ CMV maior que a Receita — verifique os valores.")
 
     margem_lucro = st.slider("Margem de Lucro Bruto (%)", 5, 60, 25) / 100
 
