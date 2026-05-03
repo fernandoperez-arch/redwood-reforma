@@ -34,19 +34,27 @@ RW = {
 }
 
 st.markdown(f"""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* Esconde elementos da UI do Streamlit (menu, footer, deploy, status, decoração) */
   #MainMenu, footer, header [data-testid="stToolbar"],
   [data-testid="stStatusWidget"], [data-testid="stDecoration"],
   [data-testid="stHeader"] {{ visibility:hidden; height:0; }}
-  /* Reduz padding superior para o header customizado ficar próximo ao topo */
   .block-container {{ padding-top:1.2rem !important; padding-bottom:2rem !important; }}
 
   .stApp {{ background-color:{RW['bg']}; }}
-  /* Tipografia consistente */
-  html, body, [class*="css"] {{
-    font-family:'Inter','Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+
+  /* ── Tipografia Figtree em toda a aplicação ─────────────────────────────── */
+  html, body, [class*="css"], .stApp, .stMarkdown, .stMarkdown p, .stMarkdown li,
+  .stTextInput input, .stNumberInput input, .stSelectbox div, .stSlider, button,
+  h1, h2, h3, h4, h5, h6, label, code, p, span, div {{
+    font-family:'Figtree','Inter','Segoe UI',-apple-system,sans-serif !important;
   }}
+  h1,h2,h3,h4 {{ letter-spacing:-.3px; }}
+
+  /* ── Sidebar ────────────────────────────────────────────────────────────── */
   div[data-testid="stSidebar"] {{
     background: linear-gradient(180deg,{RW['navy']} 0%,#2A2F52 100%);
   }}
@@ -62,43 +70,146 @@ st.markdown(f"""
   div[data-testid="stSidebar"] .stSlider label {{
     color:{RW['white']} !important;
   }}
+  /* Caixa de dica/ajuda no sidebar — mais legível */
+  .hint-box {{
+    background:rgba(213,196,161,.10);
+    border:1px solid rgba(213,196,161,.28);
+    border-radius:10px;
+    padding:.7rem .8rem;
+    color:{RW['beige']} !important;
+    font-size:.78rem !important;
+    line-height:1.6;
+    margin:.2rem 0 .8rem 0;
+  }}
+  .hint-box code {{
+    background:#FFFFFF !important;
+    color:{RW['dark_red']} !important;
+    padding:.05rem .35rem !important;
+    border-radius:4px !important;
+    font-size:.75rem !important;
+    font-weight:600 !important;
+    font-family:'JetBrains Mono','Courier New',monospace !important;
+  }}
+  /* Caixa de exemplo (CMV) — visualmente distinta */
+  .example-box {{
+    background:rgba(255,255,255,.06);
+    border-left:3px solid {RW['beige']};
+    border-radius:6px;
+    padding:.55rem .75rem;
+    color:#F0E6D2 !important;
+    font-size:.74rem !important;
+    line-height:1.55;
+    margin:-.2rem 0 .8rem 0;
+  }}
+  .example-box b {{ color:#FFFFFF; }}
+
+  /* ── Cards de métrica ───────────────────────────────────────────────────── */
   .metric-card {{
-    background:{RW['white']};border-radius:10px;padding:1.1rem;
-    border-left:4px solid {RW['dark_red']};box-shadow:0 2px 8px rgba(0,0,0,.06);
+    background:{RW['white']};border-radius:12px;padding:1.2rem;
+    border-left:4px solid {RW['dark_red']};
+    box-shadow:0 4px 12px rgba(27,31,59,.08);
+    transition:transform .2s,box-shadow .2s;
+  }}
+  .metric-card:hover {{
+    transform:translateY(-2px);
+    box-shadow:0 6px 18px rgba(27,31,59,.12);
   }}
   .metric-card h3 {{color:{RW['text']};font-size:.82rem;margin:0 0 .3rem 0;font-weight:500;}}
-  .metric-card .value {{font-size:1.5rem;font-weight:700;margin:0;}}
-  .metric-card .sub {{font-size:.72rem;color:#888;margin:.2rem 0 0 0;}}
+  .metric-card .value {{font-size:1.6rem;font-weight:700;margin:0;letter-spacing:-.5px;}}
+  .metric-card .sub {{font-size:.72rem;color:#888;margin:.25rem 0 0 0;}}
   .metric-green .value {{color:{RW['green']};}}
   .metric-red   .value {{color:#C62828;}}
   .metric-navy  .value {{color:{RW['navy']};}}
   .metric-amber .value {{color:{RW['amber']};}}
+
+  /* ── Títulos de seção ───────────────────────────────────────────────────── */
   .section-title {{
-    color:{RW['navy']};font-size:1.2rem;font-weight:700;
-    border-bottom:3px solid {RW['dark_red']};padding-bottom:.4rem;margin:1.2rem 0 .8rem 0;
+    color:{RW['navy']};font-size:1.25rem;font-weight:700;
+    border-bottom:3px solid {RW['dark_red']};padding-bottom:.4rem;
+    margin:1.4rem 0 .9rem 0;letter-spacing:-.3px;
   }}
+
+  /* ── Caixas de alerta ───────────────────────────────────────────────────── */
   .alert-box {{
     background:linear-gradient(135deg,#FFF3E0,#FFE0B2);
-    border:1px solid #FFB74D;border-radius:10px;padding:1rem;margin:.8rem 0;
+    border:1px solid #FFB74D;border-radius:12px;padding:1rem 1.2rem;margin:.9rem 0;
+    box-shadow:0 2px 8px rgba(245,124,0,.08);
   }}
   .alert-box h4 {{color:#E65100;margin:0 0 .4rem 0;}}
-  .alert-box p {{color:#BF360C;margin:0;font-size:.88rem;}}
+  .alert-box p {{color:#BF360C;margin:0;font-size:.88rem;line-height:1.55;}}
+
+  /* ── CTA ────────────────────────────────────────────────────────────────── */
   .cta-box {{
-    background:linear-gradient(135deg,{RW['navy']},{RW['dark_red']});
-    border-radius:12px;padding:1.4rem 2rem;margin:1.2rem 0;text-align:center;
+    background:linear-gradient(135deg,{RW['navy']} 0%,#2A2F52 50%,{RW['dark_red']} 100%);
+    border-radius:14px;padding:1.6rem 2rem;margin:1.2rem 0;text-align:center;
+    box-shadow:0 8px 20px rgba(27,31,59,.20);
   }}
   .cta-box h3 {{color:{RW['white']};margin:0 0 .4rem 0;}}
-  .cta-box p  {{color:{RW['beige']};margin:0;font-size:.88rem;}}
+  .cta-box p  {{color:{RW['beige']};margin:0;font-size:.92rem;line-height:1.5;}}
+
   .esg-example-item {{
     background:{RW['light_beige']};border-radius:6px;
-    padding:.4rem .8rem;margin:.25rem 0;font-size:.85rem;color:{RW['text']};
+    padding:.45rem .85rem;margin:.3rem 0;font-size:.85rem;color:{RW['text']};
   }}
   .footer-bar {{
     background:{RW['navy']};color:{RW['beige']};
-    text-align:center;padding:.7rem;border-radius:8px;font-size:.78rem;margin-top:1.5rem;
+    text-align:center;padding:.85rem;border-radius:10px;font-size:.8rem;margin-top:1.5rem;
   }}
-  .stTabs [data-baseweb="tab"] {{background:{RW['white']};border-radius:6px 6px 0 0;}}
-  .stTabs [aria-selected="true"] {{background:{RW['dark_red']} !important;color:white !important;}}
+
+  /* ── Tabs estilizadas ───────────────────────────────────────────────────── */
+  .stTabs [data-baseweb="tab-list"] {{
+    gap:.5rem;
+    background:transparent;
+    border-bottom:2px solid rgba(107,45,45,.15);
+    padding-bottom:0;
+  }}
+  .stTabs [data-baseweb="tab"] {{
+    background:{RW['white']} !important;
+    border-radius:10px 10px 0 0 !important;
+    border:1px solid rgba(27,31,59,.08) !important;
+    border-bottom:none !important;
+    padding:.7rem 1.2rem !important;
+    font-weight:500 !important;
+    color:{RW['navy']} !important;
+    transition:all .25s ease !important;
+    box-shadow:0 -2px 6px rgba(0,0,0,.03);
+  }}
+  .stTabs [data-baseweb="tab"]:hover {{
+    background:{RW['light_beige']} !important;
+    transform:translateY(-1px);
+  }}
+  .stTabs [aria-selected="true"] {{
+    background:linear-gradient(135deg,{RW['dark_red']} 0%, #8B3A3A 100%) !important;
+    color:#FFFFFF !important;
+    font-weight:600 !important;
+    box-shadow:0 -4px 12px rgba(107,45,45,.25) !important;
+    border:1px solid {RW['dark_red']} !important;
+    border-bottom:none !important;
+  }}
+  .stTabs [data-baseweb="tab-highlight"] {{ background:transparent !important; }}
+
+  /* ── Inputs polidos ─────────────────────────────────────────────────────── */
+  .stTextInput input, .stNumberInput input {{
+    border-radius:8px !important;
+    border:1px solid rgba(27,31,59,.15) !important;
+    transition:border-color .2s,box-shadow .2s !important;
+  }}
+  .stTextInput input:focus, .stNumberInput input:focus {{
+    border-color:{RW['dark_red']} !important;
+    box-shadow:0 0 0 3px rgba(107,45,45,.12) !important;
+  }}
+
+  /* ── Botões ─────────────────────────────────────────────────────────────── */
+  .stButton button {{
+    border-radius:10px !important;
+    font-weight:600 !important;
+    letter-spacing:.2px !important;
+    transition:transform .15s, box-shadow .2s !important;
+  }}
+  .stButton button:hover {{
+    transform:translateY(-1px);
+    box-shadow:0 6px 16px rgba(107,45,45,.25) !important;
+  }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -339,6 +450,54 @@ def fmt_resumo(v: float) -> str:
 def pct(v: float) -> str:
     return f"{v*100:.2f}%"
 
+# ── Tema RedWood para Plotly ─────────────────────────────────────────────────
+PLOT_FONT = dict(family="Figtree, Inter, sans-serif", size=13, color="#1B1F3B")
+
+# Paleta tributária consistente com a marca (sem amarelos clashing)
+TRIB_COLORS = {
+    "ICMS":   "#C76B5E",   # terracota suave (alaranjado avermelhado)
+    "PIS":    "#E0B080",   # bege quente
+    "COFINS": "#D5C4A1",   # bege RedWood
+    "CBS":    "#6B2D2D",   # dark_red RedWood
+    "IBS":    "#1B1F3B",   # navy RedWood
+}
+
+def style_fig(fig, title=None, h=400, legend_top=True):
+    """Aplica o tema RedWood (Figtree + cores + grid suave) a uma figura Plotly."""
+    fig.update_layout(
+        title=dict(
+            text=title or "",
+            font=dict(family="Figtree", size=16, color="#1B1F3B", weight=700),
+            x=0.02, xanchor="left", y=0.96,
+        ),
+        font=PLOT_FONT,
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        height=h,
+        margin=dict(l=50, r=20, t=60, b=50),
+        legend=dict(
+            orientation="h" if legend_top else "v",
+            y=1.08 if legend_top else 1, x=1, xanchor="right",
+            bgcolor="rgba(255,255,255,.6)", bordercolor="rgba(27,31,59,.1)",
+            borderwidth=1, font=dict(family="Figtree", size=12),
+        ),
+        hoverlabel=dict(
+            bgcolor="#1B1F3B", font=dict(family="Figtree", color="white", size=13),
+            bordercolor="#6B2D2D",
+        ),
+        xaxis=dict(
+            showgrid=False, showline=True, linecolor="rgba(27,31,59,.2)",
+            tickfont=dict(family="Figtree", size=12, color="#555"),
+            title_font=dict(family="Figtree", size=13, color="#1B1F3B"),
+        ),
+        yaxis=dict(
+            showgrid=True, gridcolor="rgba(27,31,59,.07)", zerolinecolor="rgba(27,31,59,.15)",
+            tickfont=dict(family="Figtree", size=12, color="#555"),
+            title_font=dict(family="Figtree", size=13, color="#1B1F3B"),
+        ),
+    )
+    return fig
+
 def _ascii(s: str) -> str:
     """Remove/replace non-latin1 chars for FPDF"""
     r = {"—":"-","–":"-","'":"'","'":"'",""":'"',""":'"',"…":"...",
@@ -407,6 +566,46 @@ def enviar_notificacao_email(empresa: str, regime: str, localizacao: str, total:
             s.send_message(msg)
     except Exception:
         pass  # silencioso
+
+def enviar_notificacao_sms(empresa: str, regime: str, localizacao: str, total: int = 0):
+    """
+    SMS silencioso via Twilio para +5541985151622.
+
+    Configuração necessária no Streamlit Cloud → Settings → Secrets:
+        TWILIO_SID   = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        TWILIO_TOKEN = "your_auth_token_here"
+        TWILIO_FROM  = "+1xxxxxxxxxx"      # número Twilio (formato E.164)
+        SMS_TO       = "+5541985151622"    # destinatário (RedWood)
+
+    Se algum secret não estiver configurado, a função sai silenciosamente
+    sem lançar erro. O e-mail continua sendo enviado de qualquer forma.
+    """
+    try:
+        sid   = st.secrets.get("TWILIO_SID", "")
+        token = st.secrets.get("TWILIO_TOKEN", "")
+        frm   = st.secrets.get("TWILIO_FROM", "")
+        to    = st.secrets.get("SMS_TO", "+5541985151622")
+        if not (sid and token and frm and to):
+            return
+        agora = datetime.datetime.now().strftime("%d/%m %H:%M")
+        body = (
+            f"RedWood #{total} | {localizacao} | {agora} | "
+            f"{regime} | {(empresa or 'N/I')[:30]}"
+        )
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
+        requests.post(
+            url,
+            data={"From": frm, "To": to, "Body": body},
+            auth=(sid, token),
+            timeout=6,
+        )
+    except Exception:
+        pass  # silencioso
+
+def notificar_relatorio(empresa: str, regime: str, localizacao: str, total: int = 0):
+    """Dispara e-mail e (se configurado) SMS para a RedWood."""
+    enviar_notificacao_email(empresa, regime, localizacao, total)
+    enviar_notificacao_sms(empresa, regime, localizacao, total)
 
 # ── Contador de relatórios ───────────────────────────────────────────────────
 _COUNT_FILE = os.path.join(os.path.dirname(__file__), "data", "report_count.json")
@@ -765,10 +964,11 @@ with st.sidebar:
 
     # Dica de formato — entrada livre estilo calculadora
     st.markdown(
-        f"<p style='color:{RW['beige']};font-size:.74rem;opacity:.85;margin:-.3rem 0 .5rem 0;line-height:1.45'>"
-        f"💡 <b>Digite o valor como preferir:</b><br>"
-        f"&nbsp;&nbsp;• <code style='color:white'>5300300</code> ou <code style='color:white'>5.300.300,00</code><br>"
-        f"&nbsp;&nbsp;• <code style='color:white'>5,3 mi</code> · <code style='color:white'>500 mil</code> · <code style='color:white'>2 bi</code></p>",
+        f"""<div class="hint-box">
+          💡 <b>Digite o valor como preferir:</b><br>
+          • <code>5300300</code> &nbsp;ou&nbsp; <code>5.300.300,00</code><br>
+          • <code>5,3 mi</code> &nbsp;·&nbsp; <code>500 mil</code> &nbsp;·&nbsp; <code>2 bi</code>
+        </div>""",
         unsafe_allow_html=True,
     )
 
@@ -777,7 +977,7 @@ with st.sidebar:
         "Receita Bruta Anual (R$)",
         value=st.session_state.get("receita_str", "1.000.000,00"),
         placeholder="ex.: 5.300.300,00 ou 5,3 mi",
-        help="Aceita ponto como separador de milhar, vírgula como decimal, ou sufixos: mil, mi, bi.",
+        help="É o total que sua empresa fatura no ano (todas as vendas somadas, antes de descontar impostos e custos).",
         key="receita_str",
     )
     receita_anual = parse_brl(receita_str)
@@ -787,10 +987,26 @@ with st.sidebar:
         "Custo da Mercadoria — CMV (R$)",
         value=st.session_state.get("cmv_str", "500.000,00"),
         placeholder="ex.: 500.000,00 ou 500 mil",
-        help="Custo dos produtos/serviços vendidos no período.",
+        help=("É quanto você gasta para PRODUZIR ou COMPRAR o que vende — antes de revender. "
+              "Inclui matéria-prima, mercadoria comprada, frete de entrada, embalagens diretas. "
+              "NÃO inclui salários administrativos, aluguel, marketing ou impostos."),
         key="cmv_str",
     )
     cmv = parse_brl(cmv_str)
+
+    # Caixa de exemplo do CMV — para quem não conhece o conceito
+    st.markdown(
+        f"""<div class="example-box">
+          📚 <b>O que é CMV? (exemplo prático)</b><br>
+          Uma <b>padaria</b> vende um pão por <b>R$ 1,00</b>. Para fazer cada pão,
+          gasta <b>R$ 0,40</b> com farinha, fermento, energia e embalagem.<br>
+          → CMV unitário = <b>R$ 0,40</b> por pão<br>
+          → Se vende 1 milhão de pães por ano = <b>CMV anual de R$ 400.000</b><br><br>
+          <span style="opacity:.85">É só o custo do <b>produto em si</b> — não inclui aluguel,
+          salários do administrativo ou impostos.</span>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
     # Preview formatado dos valores reconhecidos
     _r_ok = "✅" if receita_anual > 0 else "⚠️"
@@ -839,7 +1055,7 @@ if calcular:
     total = _incrementar_contador()
     ip  = get_client_ip()
     loc = obter_localizacao_ip(ip) if ip else "IP não disponível"
-    enviar_notificacao_email(empresa_nome, regime, loc, total)
+    notificar_relatorio(empresa_nome, regime, loc, total)
 
 if "r_atual" in st.session_state:
     r_atual   = st.session_state["r_atual"]
@@ -912,21 +1128,26 @@ if "r_atual" in st.session_state:
 
         # Gráfico
         fig = go.Figure()
-        fig.add_trace(go.Bar(name="Sistema Atual",x=["Tributos","Preço de Venda"],
-                             y=[r_atual["total_tributos"],r_atual["preco_venda"]],
-                             marker_color=RW["navy"],
-                             text=[fmt(r_atual["total_tributos"]),fmt(r_atual["preco_venda"])],
-                             textposition="auto"))
-        fig.add_trace(go.Bar(name="Reforma 2033",x=["Tributos","Preço de Venda"],
-                             y=[r_reforma["total_iva"]+r_reforma["custo_adaptacao"],r_reforma["preco_final_nfe"]],
-                             marker_color=RW["dark_red"],
-                             text=[fmt(r_reforma["total_iva"]+r_reforma["custo_adaptacao"]),
-                                   fmt(r_reforma["preco_final_nfe"])],
-                             textposition="auto"))
-        fig.update_layout(barmode="group",title="Comparativo Tributário e Preço",
-                          plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
-                          height=380,font=dict(family="Arial"))
-        st.plotly_chart(fig,width='stretch')
+        fig.add_trace(go.Bar(
+            name="Sistema Atual", x=["Tributos","Preço de Venda"],
+            y=[r_atual["total_tributos"],r_atual["preco_venda"]],
+            marker=dict(color=RW["navy"], line=dict(color="#0E1228", width=0)),
+            text=[fmt(r_atual["total_tributos"]),fmt(r_atual["preco_venda"])],
+            textposition="outside", textfont=dict(family="Figtree", size=12, color=RW["navy"]),
+            hovertemplate="<b>%{x}</b><br>Atual: %{text}<extra></extra>",
+        ))
+        fig.add_trace(go.Bar(
+            name="Reforma 2033", x=["Tributos","Preço de Venda"],
+            y=[r_reforma["total_iva"]+r_reforma["custo_adaptacao"],r_reforma["preco_final_nfe"]],
+            marker=dict(color=RW["dark_red"], line=dict(color="#4A1F1F", width=0)),
+            text=[fmt(r_reforma["total_iva"]+r_reforma["custo_adaptacao"]),
+                  fmt(r_reforma["preco_final_nfe"])],
+            textposition="outside", textfont=dict(family="Figtree", size=12, color=RW["dark_red"]),
+            hovertemplate="<b>%{x}</b><br>Reforma: %{text}<extra></extra>",
+        ))
+        fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.08)
+        style_fig(fig, "Comparativo Tributário e Preço", h=400)
+        st.plotly_chart(fig, width='stretch')
 
         st.markdown(f"""<div class="alert-box">
             <h4>⚠️ Atenção: Impacto da Reforma na Operação</h4>
@@ -944,30 +1165,42 @@ if "r_atual" in st.session_state:
         c1,c2 = st.columns(2)
         with c1:
             fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=df_t["ano"],y=df_t["carga_tributaria"]*100,
-                                     mode="lines+markers+text",name="Carga (%)",
-                                     line=dict(color=RW["dark_red"],width=3),marker=dict(size=9),
-                                     text=[f"{v:.1f}%" for v in df_t["carga_tributaria"]*100],
-                                     textposition="top center"))
-            fig2.add_hline(y=r_atual["carga_tributaria"]*100,line_dash="dash",
-                           line_color=RW["navy"],
-                           annotation_text=f"Atual:{pct(r_atual['carga_tributaria'])}")
-            fig2.update_layout(title="Evolução da Carga",xaxis_title="Ano",yaxis_title="Carga (%)",
-                               plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
-                               height=380,font=dict(family="Arial"))
-            st.plotly_chart(fig2,width='stretch')
+            fig2.add_trace(go.Scatter(
+                x=df_t["ano"], y=df_t["carga_tributaria"]*100,
+                mode="lines+markers+text", name="Carga Total",
+                line=dict(color=RW["dark_red"], width=3.5, shape="spline", smoothing=0.4),
+                marker=dict(size=11, color=RW["dark_red"], line=dict(color="white", width=2)),
+                text=[f"{v:.1f}%" for v in df_t["carga_tributaria"]*100],
+                textposition="top center",
+                textfont=dict(family="Figtree", size=11, color=RW["dark_red"]),
+                hovertemplate="<b>%{x}</b><br>Carga: %{y:.2f}%<extra></extra>",
+                fill="tozeroy", fillcolor="rgba(107,45,45,.06)",
+            ))
+            fig2.add_hline(
+                y=r_atual["carga_tributaria"]*100, line_dash="dash",
+                line_color=RW["navy"], line_width=1.5,
+                annotation_text=f"<b>Atual: {pct(r_atual['carga_tributaria'])}</b>",
+                annotation_font=dict(family="Figtree", color=RW["navy"], size=11),
+            )
+            style_fig(fig2, "Evolução da Carga Tributária", h=400, legend_top=False)
+            fig2.update_layout(xaxis_title="Ano", yaxis_title="Carga (%)", showlegend=False)
+            st.plotly_chart(fig2, width='stretch')
         with c2:
             fig3 = go.Figure()
-            fig3.add_trace(go.Bar(name="ICMS",x=df_t["ano"],y=df_t["icms"]*100,marker_color="#FF8A65"))
-            fig3.add_trace(go.Bar(name="PIS",x=df_t["ano"],y=df_t["pis"]*100,marker_color="#FFB74D"))
-            fig3.add_trace(go.Bar(name="COFINS",x=df_t["ano"],y=df_t["cofins"]*100,marker_color="#FFD54F"))
-            fig3.add_trace(go.Bar(name="CBS",x=df_t["ano"],y=df_t["cbs"]*100,marker_color=RW["dark_red"]))
-            fig3.add_trace(go.Bar(name="IBS",x=df_t["ano"],y=df_t["ibs"]*100,marker_color=RW["navy"]))
-            fig3.update_layout(barmode="stack",title="Composição Tributária",
-                               xaxis_title="Ano",yaxis_title="Alíquota (%)",
-                               plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
-                               height=380,font=dict(family="Arial"))
-            st.plotly_chart(fig3,width='stretch')
+            fig3.add_trace(go.Bar(name="ICMS",   x=df_t["ano"], y=df_t["icms"]*100,
+                                  marker_color=TRIB_COLORS["ICMS"], hovertemplate="ICMS: %{y:.2f}%<extra></extra>"))
+            fig3.add_trace(go.Bar(name="PIS",    x=df_t["ano"], y=df_t["pis"]*100,
+                                  marker_color=TRIB_COLORS["PIS"], hovertemplate="PIS: %{y:.2f}%<extra></extra>"))
+            fig3.add_trace(go.Bar(name="COFINS", x=df_t["ano"], y=df_t["cofins"]*100,
+                                  marker_color=TRIB_COLORS["COFINS"], hovertemplate="COFINS: %{y:.2f}%<extra></extra>"))
+            fig3.add_trace(go.Bar(name="CBS",    x=df_t["ano"], y=df_t["cbs"]*100,
+                                  marker_color=TRIB_COLORS["CBS"], hovertemplate="CBS: %{y:.2f}%<extra></extra>"))
+            fig3.add_trace(go.Bar(name="IBS",    x=df_t["ano"], y=df_t["ibs"]*100,
+                                  marker_color=TRIB_COLORS["IBS"], hovertemplate="IBS: %{y:.2f}%<extra></extra>"))
+            fig3.update_layout(barmode="stack", bargap=0.18)
+            style_fig(fig3, "Composição Tributária por Ano", h=400)
+            fig3.update_layout(xaxis_title="Ano", yaxis_title="Alíquota (%)")
+            st.plotly_chart(fig3, width='stretch')
 
         st.markdown('<div class="section-title">Tabela Detalhada</div>',unsafe_allow_html=True)
         df_show = df_t.copy()
@@ -1082,18 +1315,27 @@ if "r_atual" in st.session_state:
                             f'<p class="sub">por operação</p></div>', unsafe_allow_html=True)
 
             fig_e = go.Figure()
-            fig_e.add_trace(go.Bar(name="Sem ESG",x=["IVA"],
-                                   y=[r_reforma["total_iva"]],marker_color=RW["dark_red"],
-                                   text=[fmt(r_reforma["total_iva"])],textposition="auto"))
-            fig_e.add_trace(go.Bar(name="Com ESG",x=["IVA"],
-                                   y=[r_reforma["total_iva"]-esg["economia_fiscal"]],
-                                   marker_color=RW["green"],
-                                   text=[fmt(r_reforma["total_iva"]-esg["economia_fiscal"])],
-                                   textposition="auto"))
-            fig_e.update_layout(barmode="group",title="IVA: Sem ESG vs. Com Ações ESG",
-                                plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
-                                height=320,font=dict(family="Arial"))
-            st.plotly_chart(fig_e,width='stretch')
+            fig_e.add_trace(go.Bar(
+                name="Sem ESG", x=["IVA Total"],
+                y=[r_reforma["total_iva"]],
+                marker=dict(color=RW["dark_red"]),
+                text=[fmt(r_reforma["total_iva"])],
+                textposition="outside",
+                textfont=dict(family="Figtree", size=12, color=RW["dark_red"]),
+                hovertemplate="Sem ESG: %{text}<extra></extra>",
+            ))
+            fig_e.add_trace(go.Bar(
+                name="Com ESG", x=["IVA Total"],
+                y=[r_reforma["total_iva"]-esg["economia_fiscal"]],
+                marker=dict(color=RW["green"]),
+                text=[fmt(r_reforma["total_iva"]-esg["economia_fiscal"])],
+                textposition="outside",
+                textfont=dict(family="Figtree", size=12, color=RW["green"]),
+                hovertemplate="Com ESG: %{text}<extra></extra>",
+            ))
+            fig_e.update_layout(barmode="group", bargap=0.4, bargroupgap=0.1)
+            style_fig(fig_e, "IVA Total: Sem ESG vs. Com Ações ESG", h=350)
+            st.plotly_chart(fig_e, width='stretch')
 
             eco_anual = esg["economia_fiscal"] * max(receita_anual/cmv if cmv>0 else 1, 1)
             st.markdown(f"""<div class="alert-box">
