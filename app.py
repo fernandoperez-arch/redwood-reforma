@@ -53,54 +53,81 @@ st.markdown(f"""
   }}
   h1,h2,h3,h4 {{ letter-spacing:-.3px; }}
 
-  /* ── Sidebar ────────────────────────────────────────────────────────────── */
-  div[data-testid="stSidebar"] {{
-    background: linear-gradient(180deg,{RW['navy']} 0%,#2A2F52 100%);
+  /* ── Sidebar — força fundo navy escuro (multi-selector p/ versões novas Streamlit) ── */
+  section[data-testid="stSidebar"],
+  div[data-testid="stSidebar"],
+  [data-testid="stSidebar"],
+  [data-testid="stSidebar"] > div,
+  [data-testid="stSidebarContent"],
+  [data-testid="stSidebarUserContent"] {{
+    background: linear-gradient(180deg,#0F1228 0%,{RW['navy']} 50%,#2A2F52 100%) !important;
   }}
-  div[data-testid="stSidebar"] label,
-  div[data-testid="stSidebar"] .stMarkdown p,
-  div[data-testid="stSidebar"] .stMarkdown h1,
-  div[data-testid="stSidebar"] .stMarkdown h2,
-  div[data-testid="stSidebar"] .stMarkdown h3,
-  div[data-testid="stSidebar"] .stSelectbox label,
-  div[data-testid="stSidebar"] .stTextInput label,
-  div[data-testid="stSidebar"] .stTextArea label,
-  div[data-testid="stSidebar"] .stNumberInput label,
-  div[data-testid="stSidebar"] .stSlider label {{
+  /* Garante que blocos internos não cubram o gradiente */
+  [data-testid="stSidebar"] [data-testid="stVerticalBlock"],
+  [data-testid="stSidebar"] [data-testid="block-container"] {{
+    background:transparent !important;
+  }}
+  /* Cor de texto branca/bege em todos os labels e markdowns da sidebar */
+  [data-testid="stSidebar"] label,
+  [data-testid="stSidebar"] .stMarkdown,
+  [data-testid="stSidebar"] .stMarkdown p,
+  [data-testid="stSidebar"] .stMarkdown h1,
+  [data-testid="stSidebar"] .stMarkdown h2,
+  [data-testid="stSidebar"] .stMarkdown h3,
+  [data-testid="stSidebar"] .stSelectbox label,
+  [data-testid="stSidebar"] .stTextInput label,
+  [data-testid="stSidebar"] .stTextArea label,
+  [data-testid="stSidebar"] .stNumberInput label,
+  [data-testid="stSidebar"] .stSlider label,
+  [data-testid="stSidebar"] [data-testid="stWidgetLabel"],
+  [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {{
     color:{RW['white']} !important;
   }}
-  /* Caixa de dica/ajuda no sidebar — mais legível */
-  .hint-box {{
-    background:rgba(213,196,161,.10);
-    border:1px solid rgba(213,196,161,.28);
-    border-radius:10px;
-    padding:.7rem .8rem;
-    color:{RW['beige']} !important;
-    font-size:.78rem !important;
-    line-height:1.6;
-    margin:.2rem 0 .8rem 0;
+  /* Inputs da sidebar — fundo claro + texto navy escuro (legível) */
+  [data-testid="stSidebar"] .stTextInput input,
+  [data-testid="stSidebar"] .stNumberInput input,
+  [data-testid="stSidebar"] .stTextArea textarea,
+  [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] > div {{
+    background:#FFFFFF !important;
+    color:{RW['navy']} !important;
+    font-weight:500 !important;
   }}
+  /* Slider track na sidebar */
+  [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] {{ color:{RW['beige']}; }}
+  /* Caixa de dica/ajuda no sidebar — bem legível sobre navy */
+  .hint-box {{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(213,196,161,.35);
+    border-radius:10px;
+    padding:.75rem .85rem;
+    color:#F5EBD9 !important;
+    font-size:.82rem !important;
+    line-height:1.7;
+    margin:.2rem 0 .9rem 0;
+  }}
+  .hint-box b {{ color:#FFFFFF !important; }}
   .hint-box code {{
     background:#FFFFFF !important;
     color:{RW['dark_red']} !important;
-    padding:.05rem .35rem !important;
+    padding:.1rem .4rem !important;
     border-radius:4px !important;
-    font-size:.75rem !important;
-    font-weight:600 !important;
+    font-size:.78rem !important;
+    font-weight:700 !important;
     font-family:'JetBrains Mono','Courier New',monospace !important;
+    box-shadow:0 1px 3px rgba(0,0,0,.2);
   }}
-  /* Caixa de exemplo (CMV) — visualmente distinta */
+  /* Caixa de exemplo (CMV) — visualmente distinta e legível */
   .example-box {{
-    background:rgba(255,255,255,.06);
+    background:rgba(255,255,255,.10);
     border-left:3px solid {RW['beige']};
     border-radius:6px;
-    padding:.55rem .75rem;
-    color:#F0E6D2 !important;
-    font-size:.74rem !important;
-    line-height:1.55;
-    margin:-.2rem 0 .8rem 0;
+    padding:.7rem .85rem;
+    color:#FFFFFF !important;
+    font-size:.8rem !important;
+    line-height:1.65;
+    margin:-.2rem 0 .9rem 0;
   }}
-  .example-box b {{ color:#FFFFFF; }}
+  .example-box b {{ color:{RW['beige']} !important; font-weight:700; }}
 
   /* ── Cards de métrica ───────────────────────────────────────────────────── */
   .metric-card {{
@@ -1011,14 +1038,15 @@ with st.sidebar:
     _r_ok = "✅" if receita_anual > 0 else "⚠️"
     _c_ok = "✅" if cmv > 0 else "⚠️"
     st.markdown(
-        f"<div style='background:rgba(213,196,161,.12);border:1px solid rgba(213,196,161,.25);"
-        f"border-radius:8px;padding:.55rem .8rem;font-size:.8rem;color:{RW['beige']};"
-        f"margin:.4rem 0 .6rem 0;line-height:1.6'>"
-        f"{_r_ok} <b>Receita reconhecida:</b><br>"
-        f"<span style='color:white;font-size:.95rem;font-weight:600'>{fmt(receita_anual)}</span><br>"
-        f"<hr style='border:none;border-top:1px dashed rgba(213,196,161,.3);margin:.4rem 0'>"
-        f"{_c_ok} <b>CMV reconhecido:</b><br>"
-        f"<span style='color:white;font-size:.95rem;font-weight:600'>{fmt(cmv)}</span>"
+        f"<div style='background:rgba(255,255,255,.12);border:1px solid rgba(213,196,161,.4);"
+        f"border-radius:10px;padding:.7rem .9rem;font-size:.85rem;"
+        f"color:#F5EBD9;margin:.4rem 0 .8rem 0;line-height:1.7;"
+        f"box-shadow:0 2px 6px rgba(0,0,0,.15)'>"
+        f"{_r_ok} <b style='color:#FFF'>Receita reconhecida</b><br>"
+        f"<span style='color:#FFFFFF;font-size:1.05rem;font-weight:700;letter-spacing:.2px'>{fmt(receita_anual)}</span>"
+        f"<hr style='border:none;border-top:1px dashed rgba(213,196,161,.4);margin:.5rem 0'>"
+        f"{_c_ok} <b style='color:#FFF'>CMV reconhecido</b><br>"
+        f"<span style='color:#FFFFFF;font-size:1.05rem;font-weight:700;letter-spacing:.2px'>{fmt(cmv)}</span>"
         f"</div>",
         unsafe_allow_html=True,
     )
