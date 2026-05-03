@@ -12,9 +12,10 @@ import requests
 from fpdf import FPDF
 
 # ── Configuração da página ───────────────────────────────────────────────────
+_FAVICON = os.path.join(os.path.dirname(__file__), "assets", "logo_redwood_vertical.png")
 st.set_page_config(
-    page_title="Projeção Reforma Tributária | RedWood",
-    page_icon="🌲",
+    page_title="Projeção da Reforma Tributária | RedWood",
+    page_icon=_FAVICON if os.path.exists(_FAVICON) else "🌲",
     layout="wide",
     initial_sidebar_state="expanded",
 )
