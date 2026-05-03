@@ -34,7 +34,18 @@ RW = {
 
 st.markdown(f"""
 <style>
+  /* Esconde elementos da UI do Streamlit (menu, footer, deploy, status, decoração) */
+  #MainMenu, footer, header [data-testid="stToolbar"],
+  [data-testid="stStatusWidget"], [data-testid="stDecoration"],
+  [data-testid="stHeader"] {{ visibility:hidden; height:0; }}
+  /* Reduz padding superior para o header customizado ficar próximo ao topo */
+  .block-container {{ padding-top:1.2rem !important; padding-bottom:2rem !important; }}
+
   .stApp {{ background-color:{RW['bg']}; }}
+  /* Tipografia consistente */
+  html, body, [class*="css"] {{
+    font-family:'Inter','Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+  }}
   div[data-testid="stSidebar"] {{
     background: linear-gradient(180deg,{RW['navy']} 0%,#2A2F52 100%);
   }}
@@ -259,6 +270,20 @@ GRI_INDICATORS = {
 # ── Funções utilitárias ──────────────────────────────────────────────────────
 def fmt(v: float) -> str:
     return f"R$ {v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
+
+def fmt_latex(v: float) -> str:
+    r"""Formata moeda escapando o $ para uso em st.latex (R\$)."""
+    return f"R\\$\\,{v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
+
+def fmt_resumo(v: float) -> str:
+    """Formata valor em milhões/bilhões para exibição compacta."""
+    if v >= 1_000_000_000:
+        return f"R$ {v/1_000_000_000:,.2f} bi".replace(",","X").replace(".",",").replace("X",".")
+    if v >= 1_000_000:
+        return f"R$ {v/1_000_000:,.2f} mi".replace(",","X").replace(".",",").replace("X",".")
+    if v >= 1_000:
+        return f"R$ {v/1_000:,.1f} mil".replace(",","X").replace(".",",").replace("X",".")
+    return fmt(v)
 
 def pct(v: float) -> str:
     return f"{v*100:.2f}%"
@@ -571,30 +596,69 @@ def gerar_pdf(nome,regime,estado,cmv,margem,atual,reforma,trans,diff,diff_r):
 # ═══════════════════════════════════════════════════════════════════════════
 
 # ── Header ───────────────────────────────────────────────────────────────────
-logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo_redwood_vertical.png")
-col_logo, col_titulo = st.columns([1, 5])
-with col_logo:
-    if os.path.exists(logo_path):
-        st.image(logo_path, width=110)
-    else:
-        st.markdown("### 🌲")
-with col_titulo:
-    st.markdown(f"""
-    <div style="background:linear-gradient(135deg,{RW['navy']} 0%,{RW['dark_red']} 100%);
-                padding:1.1rem 2rem;border-radius:12px;">
-      <h1 style="color:white;margin:0;font-size:1.5rem;">Projeção da Reforma Tributária</h1>
-      <p style="color:{RW['beige']};margin:.25rem 0 0 0;font-size:.85rem;">
-        Simulador CBS/IBS · Comparativo atual vs. reforma · Ações ESG/GRI · RedWood Estratégia & Impacto
-      </p>
-    </div>""", unsafe_allow_html=True)
+import base64 as _b64
+
+def _logo_b64(name: str) -> str:
+    p = os.path.join(os.path.dirname(__file__), "assets", name)
+    if os.path.exists(p):
+        with open(p, "rb") as f:
+            return _b64.b64encode(f.read()).decode()
+    return ""
+
+# Logo branca para fundos escuros (header) e logo escura para fundos claros (PDF)
+_LOGO_WHITE = _logo_b64("logo_redwood_white.png")
+_LOGO_DARK  = _logo_b64("logo_redwood_vertical.png")
+
+# Banner único integrando logo + título (visual coeso)
+_logo_html = (
+    f'<img src="data:image/png;base64,{_LOGO_WHITE}" alt="RedWood" '
+    f'style="height:96px;width:auto;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))" />'
+    if _LOGO_WHITE else '<div style="font-size:3rem;color:white">🌲</div>'
+)
+
+st.markdown(f"""
+<div style="background:linear-gradient(135deg,{RW['navy']} 0%, #2A2F52 60%, {RW['dark_red']} 100%);
+            padding:1.4rem 2rem;border-radius:14px;
+            box-shadow:0 8px 24px rgba(27,31,59,.25);
+            display:flex;align-items:center;gap:1.6rem;
+            border:1px solid rgba(213,196,161,.15);">
+  <div style="flex:0 0 auto;">{_logo_html}</div>
+  <div style="flex:1 1 auto;">
+    <h1 style="color:#FFFFFF;margin:0;font-size:1.7rem;font-weight:700;letter-spacing:-.5px;">
+      Projeção da Reforma Tributária
+    </h1>
+    <p style="color:{RW['beige']};margin:.35rem 0 0 0;font-size:.92rem;line-height:1.4;">
+      Simulador CBS/IBS&nbsp;·&nbsp;Comparativo atual vs. reforma&nbsp;·&nbsp;Ações ESG/GRI
+    </p>
+    <p style="color:rgba(213,196,161,.75);margin:.2rem 0 0 0;font-size:.78rem;font-style:italic;">
+      RedWood Estratégia &amp; Impacto · Consultoria Tributária e ESG
+    </p>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.write("")
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown(f"<h2 style='color:{RW['beige']};text-align:center;margin:0'>📋 Dados da Empresa</h2>",
-                unsafe_allow_html=True)
-    st.markdown("---")
+    if _LOGO_WHITE:
+        st.markdown(
+            f'<div style="text-align:center;padding:.4rem 0 .8rem 0;">'
+            f'<img src="data:image/png;base64,{_LOGO_WHITE}" '
+            f'style="width:60%;max-width:140px;opacity:.95" alt="RedWood"/>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    st.markdown(
+        f"<h2 style='color:{RW['beige']};text-align:center;margin:0;"
+        f"font-size:1.05rem;letter-spacing:.5px;text-transform:uppercase;'>"
+        f"Dados da Empresa</h2>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"<hr style='border:none;border-top:1px solid {RW['dark_red']};margin:.6rem 0 1rem 0;opacity:.6'>",
+        unsafe_allow_html=True,
+    )
 
     # CNPJ
     cnpj_in = st.text_input("CNPJ", placeholder="00.000.000/0000-00")
@@ -604,7 +668,7 @@ with st.sidebar:
     estado_idx   = st.session_state.get("estado_idx", ESTADOS_BR.index("PR"))
 
     if cnpj_in and len("".join(c for c in cnpj_in if c.isdigit())) == 14:
-        if st.button("🔍 Buscar CNPJ", use_container_width=True):
+        if st.button("🔍 Buscar CNPJ", width='stretch'):
             with st.spinner("Consultando Receita Federal..."):
                 d = buscar_cnpj(cnpj_in)
             if d:
@@ -640,20 +704,57 @@ with st.sidebar:
                      .replace("Secundário:","<span style='color:#888'>Secundário:</span>")}
             </div>""", unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.markdown(f"<h3 style='color:{RW['beige']}'>⚙️ Parâmetros Fiscais</h3>", unsafe_allow_html=True)
+    st.markdown(f"<hr style='border:none;border-top:1px solid {RW['dark_red']};margin:1rem 0 .6rem 0;opacity:.5'>",unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color:{RW['beige']};font-size:.95rem;letter-spacing:.4px;text-transform:uppercase;margin:.2rem 0 .4rem 0'>⚙️ Parâmetros Fiscais</h3>", unsafe_allow_html=True)
     regime = st.selectbox("Regime Tributário", ["Lucro Real","Lucro Presumido","Simples Nacional"])
     estado = st.selectbox("Estado (UF)", ESTADOS_BR, index=estado_idx)
 
-    st.markdown("---")
-    st.markdown(f"<h3 style='color:{RW['beige']}'>💰 Dados Financeiros</h3>", unsafe_allow_html=True)
-    receita_anual = st.number_input("Receita Bruta Anual (R$)", min_value=0.0,
-                                    value=1_000_000.0, step=50_000.0, format="%.2f")
-    cmv = st.number_input("Custo da Mercadoria (CMV) (R$)", min_value=0.0,
-                           value=500_000.0, step=10_000.0, format="%.2f")
+    st.markdown(f"<hr style='border:none;border-top:1px solid {RW['dark_red']};margin:1rem 0 .6rem 0;opacity:.5'>",unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color:{RW['beige']};font-size:.95rem;letter-spacing:.4px;text-transform:uppercase;margin:.2rem 0 .4rem 0'>💰 Dados Financeiros</h3>", unsafe_allow_html=True)
+
+    # Aviso de formato (sem ponto/vírgula — só números)
+    st.markdown(
+        f"<p style='color:{RW['beige']};font-size:.74rem;opacity:.85;margin:-.3rem 0 .3rem 0'>"
+        f"💡 <b>Como inserir valores:</b> escolha a unidade abaixo e digite apenas números "
+        f"(ex.: <code style='color:white'>5</code> em <i>milhões</i> = R$ 5.000.000,00).</p>",
+        unsafe_allow_html=True,
+    )
+
+    UNIDADES = {
+        "Reais (R$)":          1,
+        "Mil (R$ mil)":        1_000,
+        "Milhão (R$ mi)":      1_000_000,
+        "Bilhão (R$ bi)":      1_000_000_000,
+    }
+    unidade_lbl = st.selectbox("Unidade dos valores financeiros", list(UNIDADES.keys()), index=1)
+    mult = UNIDADES[unidade_lbl]
+
+    receita_in = st.number_input(
+        f"Receita Bruta Anual ({unidade_lbl})",
+        min_value=0.0, value=1000.0, step=10.0, format="%.2f",
+        help="Digite o valor na unidade escolhida acima. Use vírgula apenas para decimais.",
+    )
+    cmv_in = st.number_input(
+        f"Custo da Mercadoria — CMV ({unidade_lbl})",
+        min_value=0.0, value=500.0, step=10.0, format="%.2f",
+        help="Custo dos produtos/serviços vendidos no período.",
+    )
+    receita_anual = receita_in * mult
+    cmv          = cmv_in * mult
+
+    # Preview formatado
+    st.markdown(
+        f"<div style='background:rgba(213,196,161,.12);border-radius:6px;padding:.45rem .7rem;"
+        f"font-size:.78rem;color:{RW['beige']};margin:.2rem 0 .5rem 0'>"
+        f"📈 <b>Receita:</b> {fmt(receita_anual)}<br>"
+        f"📉 <b>CMV:</b> {fmt(cmv)}"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
     margem_lucro = st.slider("Margem de Lucro Bruto (%)", 5, 60, 25) / 100
 
-    calcular = st.button("📊 Calcular Projeção", use_container_width=True, type="primary")
+    calcular = st.button("📊 Calcular Projeção", width='stretch', type="primary")
 
     # Contador de projeções (visível a qualquer visitante)
     _cnt = _ler_contador()
@@ -766,7 +867,7 @@ if "r_atual" in st.session_state:
         fig.update_layout(barmode="group",title="Comparativo Tributário e Preço",
                           plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
                           height=380,font=dict(family="Arial"))
-        st.plotly_chart(fig,use_container_width=True)
+        st.plotly_chart(fig,width='stretch')
 
         st.markdown(f"""<div class="alert-box">
             <h4>⚠️ Atenção: Impacto da Reforma na Operação</h4>
@@ -795,7 +896,7 @@ if "r_atual" in st.session_state:
             fig2.update_layout(title="Evolução da Carga",xaxis_title="Ano",yaxis_title="Carga (%)",
                                plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
                                height=380,font=dict(family="Arial"))
-            st.plotly_chart(fig2,use_container_width=True)
+            st.plotly_chart(fig2,width='stretch')
         with c2:
             fig3 = go.Figure()
             fig3.add_trace(go.Bar(name="ICMS",x=df_t["ano"],y=df_t["icms"]*100,marker_color="#FF8A65"))
@@ -807,7 +908,7 @@ if "r_atual" in st.session_state:
                                xaxis_title="Ano",yaxis_title="Alíquota (%)",
                                plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
                                height=380,font=dict(family="Arial"))
-            st.plotly_chart(fig3,use_container_width=True)
+            st.plotly_chart(fig3,width='stretch')
 
         st.markdown('<div class="section-title">Tabela Detalhada</div>',unsafe_allow_html=True)
         df_show = df_t.copy()
@@ -816,7 +917,7 @@ if "r_atual" in st.session_state:
             df_show[c]=df_show[c].apply(lambda x:f"{x*100:.2f}%")
         for c in ["Preço Venda","Total Trib."]:
             df_show[c]=df_show[c].apply(fmt)
-        st.dataframe(df_show,use_container_width=True,hide_index=True)
+        st.dataframe(df_show,width='stretch',hide_index=True)
 
         st.markdown("""<div class="alert-box">
             <h4>📌 Pontos Críticos da Transição</h4>
@@ -839,7 +940,7 @@ if "r_atual" in st.session_state:
                 st.info(f"**Faixa:** {fx['faixa']} | **Alíquota:** {fx['aliquota']*100:.1f}% | **Dedução:** {fmt(fx['deduzir'])}")
             st.markdown("**Mark Up Divisor:**")
             st.latex(rf"\text{{Markup}} = 1 - ({r_atual['aliquota_efetiva']:.4f} + {margem_lucro:.2f}) = {r_atual['markup']:.4f}")
-            st.latex(rf"\text{{Preço}} = \frac{{{fmt(cmv)}}}{{{r_atual['markup']:.4f}}} = {fmt(r_atual['preco_venda'])}")
+            st.latex(rf"\text{{Preço}} = \frac{{{fmt_latex(cmv)}}}{{{r_atual['markup']:.4f}}} = {fmt_latex(r_atual['preco_venda'])}")
             if regime!="Simples Nacional":
                 st.table(pd.DataFrame({
                     "Tributo":["ICMS","PIS","COFINS","Total"],
@@ -847,9 +948,9 @@ if "r_atual" in st.session_state:
                              fmt(r_atual["cofins"]),fmt(r_atual["total_tributos"])]}))
         with cd2:
             st.markdown("#### 🔄 Reforma 2033 — IVA Dual (por fora)")
-            st.latex(rf"\text{{Base}} = \frac{{{fmt(cmv)}}}{{1-{margem_lucro:.2f}}} = {fmt(r_reforma['preco_venda'])}")
-            st.latex(rf"\text{{IVA}} = {fmt(r_reforma['preco_venda'])} \times 0.28 = {fmt(r_reforma['total_iva'])}")
-            st.latex(rf"\text{{NF\text{{-}}e}} = {fmt(r_reforma['preco_venda'])} + {fmt(r_reforma['total_iva'])} + {fmt(r_reforma['custo_adaptacao'])} = {fmt(r_reforma['preco_final_nfe'])}")
+            st.latex(rf"\text{{Base}} = \frac{{{fmt_latex(cmv)}}}{{1-{margem_lucro:.2f}}} = {fmt_latex(r_reforma['preco_venda'])}")
+            st.latex(rf"\text{{IVA}} = {fmt_latex(r_reforma['preco_venda'])} \times 0{{,}}28 = {fmt_latex(r_reforma['total_iva'])}")
+            st.latex(rf"\text{{NF-e}} = {fmt_latex(r_reforma['preco_venda'])} + {fmt_latex(r_reforma['total_iva'])} + {fmt_latex(r_reforma['custo_adaptacao'])} = {fmt_latex(r_reforma['preco_final_nfe'])}")
             st.table(pd.DataFrame({
                 "Tributo":["CBS (9,5%)","IBS Estadual (13%)","IBS Municipal (5,5%)","Total IVA","Compliance","Split Payment"],
                 "Valor":[fmt(r_reforma["cbs"]),fmt(r_reforma["ibs_estadual"]),
@@ -858,13 +959,15 @@ if "r_atual" in st.session_state:
 
         st.markdown("---")
         st.markdown("#### ♻️ Não-Cumulatividade IBS/CBS")
-        st.dataframe(pd.DataFrame({
+        # Tabela com tipos uniformes (todas strings) para evitar erro de serialização Arrow
+        df_nc = pd.DataFrame({
             "Etapa":["Produtor Rural","Indústria (+20%)","Distribuidor (+20%)","Varejista (+25%)","Consumidor Final"],
-            "Valor":[1000,1280,2048,3276.80,5593.60],
-            "IVA 28%":[280,448,716.80,1223.60,1223.60],
-            "Total NF-e":[1280,2048,3276.80,5593.60,5593.60],
-            "IVA a Recolher":[280,168,268.80,506.80,"—"],
-        }),use_container_width=True,hide_index=True)
+            "Valor":         [fmt(1000), fmt(1280), fmt(2048), fmt(3276.80), fmt(5593.60)],
+            "IVA 28%":       [fmt(280),  fmt(448),  fmt(716.80), fmt(1223.60), fmt(1223.60)],
+            "Total NF-e":    [fmt(1280), fmt(2048), fmt(3276.80), fmt(5593.60), fmt(5593.60)],
+            "IVA a Recolher":[fmt(280),  fmt(168),  fmt(268.80),  fmt(506.80),  "—"],
+        })
+        st.table(df_nc)
 
     # ── TAB 4 — ESG ───────────────────────────────────────────────────────────
     with tab4:
@@ -931,7 +1034,7 @@ if "r_atual" in st.session_state:
             fig_e.update_layout(barmode="group",title="IVA: Sem ESG vs. Com Ações ESG",
                                 plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",
                                 height=320,font=dict(family="Arial"))
-            st.plotly_chart(fig_e,use_container_width=True)
+            st.plotly_chart(fig_e,width='stretch')
 
             eco_anual = esg["economia_fiscal"] * max(receita_anual/cmv if cmv>0 else 1, 1)
             st.markdown(f"""<div class="alert-box">
@@ -988,7 +1091,7 @@ if "r_atual" in st.session_state:
         st.markdown("---")
         col_pdf1, col_pdf2 = st.columns([2,1])
         with col_pdf1:
-            if st.button("📥 Gerar e Baixar Relatório em PDF", type="primary", use_container_width=True):
+            if st.button("📥 Gerar e Baixar Relatório em PDF", type="primary", width='stretch'):
                 with st.spinner("Gerando PDF..."):
                     pdf_bytes = gerar_pdf(
                         nome_emp, regime, estado, cmv, margem_lucro,
@@ -1000,7 +1103,7 @@ if "r_atual" in st.session_state:
                     data=pdf_bytes,
                     file_name=f"reforma_tributaria_{nome_emp.replace(' ','_')}_{datetime.date.today()}.pdf",
                     mime="application/pdf",
-                    use_container_width=True,
+                    width='stretch',
                 )
         with col_pdf2:
             st.markdown("""
