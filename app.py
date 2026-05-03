@@ -69,10 +69,32 @@ st.markdown(f"""
   .stApp {{ background-color:{RW['bg']}; }}
 
   /* ── Tipografia Figtree em toda a aplicação ─────────────────────────────── */
-  html, body, [class*="css"], .stApp, .stMarkdown, .stMarkdown p, .stMarkdown li,
-  .stTextInput input, .stNumberInput input, .stSelectbox div, .stSlider, button,
-  h1, h2, h3, h4, h5, h6, label, code, p, span, div {{
+  /* IMPORTANTE: NÃO incluir span/div universalmente — quebra os ícones do
+     Material Symbols (setinhas dos expanders viram texto "arrow_drop_down"). */
+  html, body, .stApp, .stMarkdown, .stMarkdown p, .stMarkdown li,
+  .stTextInput input, .stNumberInput input, .stTextArea textarea,
+  .stSelectbox label, .stSlider label, button,
+  h1, h2, h3, h4, h5, h6, label, p {{
     font-family:'Figtree','Inter','Segoe UI',-apple-system,sans-serif !important;
+  }}
+  /* Inputs e botões herdam Figtree */
+  input, textarea, select {{
+    font-family:'Figtree','Inter','Segoe UI',-apple-system,sans-serif !important;
+  }}
+  /* PRESERVA fontes de ícones — não deixa Figtree sobrescrever */
+  [class*="material-symbols"],
+  [class*="MaterialSymbols"],
+  [class*="material-icons"],
+  span.material-symbols-outlined,
+  span.material-symbols-rounded,
+  span.material-icons,
+  span.material-icons-outlined,
+  i.material-icons,
+  i[class*="material"],
+  [data-testid*="Icon"] *,
+  svg, svg * {{
+    font-family:'Material Symbols Outlined','Material Symbols Rounded',
+                'Material Icons','Material Icons Outlined' !important;
   }}
   h1,h2,h3,h4 {{ letter-spacing:-.3px; }}
 
