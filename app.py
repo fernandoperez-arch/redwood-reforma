@@ -37,10 +37,33 @@ st.markdown(f"""
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap');
 
-  /* Esconde elementos da UI do Streamlit (menu, footer, deploy, status, decoração) */
-  #MainMenu, footer, header [data-testid="stToolbar"],
-  [data-testid="stStatusWidget"], [data-testid="stDecoration"],
-  [data-testid="stHeader"] {{ visibility:hidden; height:0; }}
+  /* ── Esconde TODA a chrome do Streamlit Cloud ─────────────────────────────
+     Inclui: menu hambúrguer, avatar/perfil, status widget, "Manage app",
+     "Deploy" button, viewer badge ("Made with Streamlit"), decoração superior. */
+  #MainMenu, footer,
+  header, .stApp > header,
+  [data-testid="stHeader"],
+  [data-testid="stToolbar"],
+  [data-testid="stStatusWidget"],
+  [data-testid="stDecoration"],
+  [data-testid="stAppDeployButton"],
+  [data-testid="stAppViewBlockContainer"] > div:first-child > [data-testid="stToolbar"],
+  .stDeployButton,
+  .stAppDeployButton,
+  div[class*="viewerBadge"],
+  div[class*="_profileContainer_"],
+  div[class*="profileContainer"],
+  a[href*="streamlit.io/cloud"],
+  button[title*="View profile"],
+  button[title*="Manage"],
+  button[kind="header"],
+  iframe[title*="manage"] {{
+    display:none !important;
+    visibility:hidden !important;
+    height:0 !important;
+    width:0 !important;
+    pointer-events:none !important;
+  }}
   .block-container {{ padding-top:1.2rem !important; padding-bottom:2rem !important; }}
 
   .stApp {{ background-color:{RW['bg']}; }}
