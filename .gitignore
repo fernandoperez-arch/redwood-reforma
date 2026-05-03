@@ -1,0 +1,19 @@
+# Streamlit secrets (NUNCA commitar!)
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+env/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# Dados locais de contagem (opcional — remova esta linha se quiser persistir no git)
+# data/report_count.json
